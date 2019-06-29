@@ -1,4 +1,5 @@
 import { TaskProperty } from "./task-property";
+import { timeout } from "./task";
 
 // tslint:disable max-classes-per-file
 export class CancellationError extends Error {
@@ -18,7 +19,8 @@ export class TaskInstance<T, U> {
   constructor(
     private context: U,
     private generator: (this: U) => IterableIterator<T>,
-    private args: unknown[]
+    private args: unknown[],
+    private debounce?: number
   ) {}
 
   perform() {
@@ -30,8 +32,10 @@ export class TaskInstance<T, U> {
 
     const iterator = this.generator.apply(this.context, this.args as []);
 
-    // this function keeps calling next() if a promise is yielded
-    this.run = this.iterate(iterator);
+    this.run = this.debounce
+      ? timeout(this.debounce).then(() => this.iterate(iterator))
+      : this.iterate(iterator);
+
     return this.run;
   }
 
@@ -48,11 +52,14 @@ export class TaskInstance<T, U> {
     if (yielded.done) {
       this.isRunning = false;
 
-      return Promise.resolve(data!);
+      return Promise.resolve(yielded.value!);
     } else if (isPromise(yielded.value)) {
       return yielded.value
         .then(result => this.iterate(iterator, result))
-        .catch(e => Promise.reject(e));
+        .catch(e => {
+          this.isRunning = false;
+          return Promise.reject(e);
+        });
     } else {
       return this.iterate(iterator, yielded.value);
     }

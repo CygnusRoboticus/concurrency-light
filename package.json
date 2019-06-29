@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "lint:ts": "tslint -c tslint.json 'src/**/*.ts' 'test/**/*.ts'",
-    "test": "cross-env TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\"}' mocha -r ts-node/register test/**/*.ts"
+    "test": "cross-env mocha -r ts-node/register test/**/*.ts"
   },
   "repository": {
     "type": "git",

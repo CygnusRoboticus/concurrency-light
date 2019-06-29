@@ -23,7 +23,7 @@ export interface ITaskOptions {
  * }
  * ```
  */
-export function task<T>(taskOptions: ITaskOptions) {
+export function task<T>(taskOptions: ITaskOptions = {}) {
   return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
     const method: () => IterableIterator<T> = descriptor.value;
     descriptor.value = generatorToTask(method, taskOptions);
