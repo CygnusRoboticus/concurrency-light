@@ -1,0 +1,5 @@
+{
+  "defaultSeverity": "error",
+  "extends": ["tslint:recommended", "tslint-config-prettier"],
+  "member-access": [true, "no-public"]
+}

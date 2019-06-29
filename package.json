@@ -1,0 +1,35 @@
+{
+  "name": "concurrency-light",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "lint:ts": "tslint -c tslint.json 'src/**/*.ts' 'test/**/*.ts'",
+    "test": "cross-env TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\"}' mocha -r ts-node/register test/**/*.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/CygnusRoboticus/concurrency-light.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/CygnusRoboticus/concurrency-light/issues"
+  },
+  "homepage": "https://github.com/CygnusRoboticus/concurrency-light#readme",
+  "dependencies": {
+    "@types/chai": "^4.1.7",
+    "@types/mocha": "^5.2.7",
+    "chai": "^4.2.0",
+    "cross-env": "^5.2.0",
+    "mocha": "^6.1.4",
+    "prettier": "^1.18.2",
+    "ts-node": "^8.3.0",
+    "tslint": "^5.18.0",
+    "typescript": "^3.5.2"
+  },
+  "devDependencies": {
+    "tslint-config-prettier": "^1.18.0"
+  }
+}
