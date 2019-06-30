@@ -18,7 +18,7 @@ export declare class TaskInstance<T, U> {
     readonly isCancelled: boolean;
     constructor(context: U, generator: (this: U) => IterableIterator<T>, args: unknown[], debounce?: number | undefined);
     perform(): Promise<T>;
-    iterate(iterator: IterableIterator<T>, data?: T): Promise<T>;
+    iterate(iterator: IterableIterator<T>): Promise<T>;
     drop(): void;
     cancel(): void;
 }

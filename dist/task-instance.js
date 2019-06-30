@@ -35,7 +35,7 @@ class TaskInstance {
             : this.iterate(iterator);
         return this.run;
     }
-    iterate(iterator, data) {
+    iterate(iterator) {
         if (this.isCancelled) {
             return Promise.reject(new CancellationError());
         }
@@ -46,14 +46,14 @@ class TaskInstance {
         }
         else if (isPromise(yielded.value)) {
             return yielded.value
-                .then(result => this.iterate(iterator, result))
+                .then(() => this.iterate(iterator))
                 .catch(e => {
                 this.state = TaskState.Finished;
                 return Promise.reject(e);
             });
         }
         else {
-            return this.iterate(iterator, yielded.value);
+            return this.iterate(iterator);
         }
     }
     drop() {

@@ -80,13 +80,11 @@ function generatorToTask(generator, opts) {
         },
         runQueue() {
             if (this.isRunning) {
-                // do nothing
+                return this.currentRun.run;
             }
             else if (this.queuedInstances.length) {
                 const instance = this.queuedInstances.pop();
-                return this.run(instance).then(() => {
-                    return this.runQueue();
-                });
+                return this.run(instance).then(() => this.runQueue());
             }
             else {
                 return Promise.resolve(this.lastSuccess);
