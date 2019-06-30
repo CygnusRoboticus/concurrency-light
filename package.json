@@ -1,6 +1,6 @@
 {
   "name": "concurrency-light",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Lightweight concurrency management",
   "main": "src/task.ts",
   "files": [
