@@ -1,15 +1,10 @@
 {
   "name": "concurrency-light",
-  "version": "0.1.1",
-  "description": "",
+  "version": "0.1.3",
+  "description": "Lightweight concurrency management",
   "main": "dist/task.js",
   "files": [
-    "task-instance.js",
-    "task-instance.d.ts",
-    "task-property.js",
-    "task-property.d.ts",
-    "task.js",
-    "task.ts"
+    "dist"
   ],
   "scripts": {
     "build": "tsc",
