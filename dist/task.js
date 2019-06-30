@@ -3,21 +3,26 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const task_property_1 = require("./task-property");
 var TaskStrategy;
 (function (TaskStrategy) {
+    /**
+     * The Drop strategy will discard any new calls if the task is currently running.
+     */
     TaskStrategy[TaskStrategy["Drop"] = 0] = "Drop";
+    /**
+     * The KeepLast strategy works as a length=1 queue, keeping the latest call if the task is already running.
+     */
     TaskStrategy[TaskStrategy["KeepLast"] = 1] = "KeepLast";
+    /**
+     * The Restartable strategy will cancel the currently running instance when it is called.
+     */
     TaskStrategy[TaskStrategy["Restartable"] = 2] = "Restartable";
+    /**
+     * The Queue strategy will run calls sequentially FIFO.
+     */
     TaskStrategy[TaskStrategy["Queue"] = 3] = "Queue";
 })(TaskStrategy = exports.TaskStrategy || (exports.TaskStrategy = {}));
 /**
- * usage:
- * ```typescript
- * class Foo {
- *   @task()
- *   *doSomething() {
- *     yield asyncAction();
- *   }
- * }
- * ```
+ * Decorator for generator functions to behave as a task-like function.
+ * @see Task<T, U>
  */
 function task(taskOptions = {}) {
     return (target, propertyKey, descriptor) => {

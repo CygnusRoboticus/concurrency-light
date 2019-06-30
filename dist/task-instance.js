@@ -27,12 +27,6 @@ class TaskInstance {
     get isCancelled() {
         return this.state === TaskState.Cancelled;
     }
-    get isFinished() {
-        return this.state === TaskState.Finished;
-    }
-    get isRunning() {
-        return this.state === TaskState.Running;
-    }
     perform() {
         this.state = TaskState.Running;
         const iterator = this.generator.apply(this.context, this.args);

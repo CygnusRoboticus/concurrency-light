@@ -2,27 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const task_1 = require("./task");
 const task_instance_1 = require("./task-instance");
-/**
- * Wraps a generator function in an ITaskProperty<T> object, providing
- * debouncing and a flag to check if the generator function is running.
- *
- * usage:
- * ```typescript
- * const doSomething = generatorToTask(function*() {
- *   yield new Promise((resolve) => {
- *     setTimeout(() => {
- *       resolve('yeah!');
- *     }), 1000);
- *   }, this);
- * }, { strategy: TaskStrategy.Restartable });
- *
- * doSomething.isRunning   // false;
- * doSomething();
- * doSomething.isRunning   // true;
- * doSomething();          // silently dropped
- * doSomething.lastResult; //'yeah!'
- * ```
- */
 function generatorToTask(generator, opts) {
     let perform;
     perform = function (...args) {
@@ -54,8 +33,8 @@ function generatorToTask(generator, opts) {
     };
     Object.assign(perform, {
         currentRun: undefined,
-        queue: [],
-        running: [],
+        queuedInstances: [],
+        runningInstances: [],
         isConcurrent: !opts.strategy,
         isDrop: opts.strategy === task_1.TaskStrategy.Drop,
         isKeepLast: opts.strategy === task_1.TaskStrategy.KeepLast,
@@ -67,7 +46,7 @@ function generatorToTask(generator, opts) {
         run(instance) {
             const instanceRun = instance.perform();
             this.currentRun = instance;
-            this.running.push(instance);
+            this.runningInstances.push(instance);
             return instanceRun
                 .then(result => {
                 this.lastSuccess = result;
@@ -86,13 +65,13 @@ function generatorToTask(generator, opts) {
         },
         removeTask(instance) {
             if (instance) {
-                const position = this.running.indexOf(instance);
-                const queuePosition = this.queue.indexOf(instance);
+                const position = this.runningInstances.indexOf(instance);
+                const queuePosition = this.queuedInstances.indexOf(instance);
                 if (position >= 0) {
-                    this.running.splice(position);
+                    this.runningInstances.splice(position);
                 }
                 if (queuePosition >= 0) {
-                    this.queue.splice(queuePosition);
+                    this.queuedInstances.splice(queuePosition);
                 }
                 if (this.currentRun === instance) {
                     this.currentRun = undefined;
@@ -103,8 +82,8 @@ function generatorToTask(generator, opts) {
             if (this.isRunning) {
                 // do nothing
             }
-            else if (this.queue.length) {
-                const instance = this.queue.pop();
+            else if (this.queuedInstances.length) {
+                const instance = this.queuedInstances.pop();
                 return this.run(instance).then(() => {
                     return this.runQueue();
                 });
@@ -114,7 +93,7 @@ function generatorToTask(generator, opts) {
             }
         },
         enqueue(instance) {
-            this.queue.unshift(instance);
+            this.queuedInstances.unshift(instance);
         },
         drop(instance) {
             instance.drop();
@@ -131,13 +110,13 @@ function generatorToTask(generator, opts) {
             this.removeTask(instance);
         },
         cancelQueued() {
-            this.queue.forEach(i => {
+            this.queuedInstances.forEach(i => {
                 i.cancel();
                 this.removeTask(i);
             });
         },
         cancelRunning() {
-            this.running.forEach(i => {
+            this.runningInstances.forEach(i => {
                 i.cancel();
                 this.removeTask(i);
             });

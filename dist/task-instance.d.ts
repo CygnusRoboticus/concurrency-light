@@ -16,8 +16,6 @@ export declare class TaskInstance<T, U> {
     run?: Promise<T>;
     state: TaskState;
     readonly isCancelled: boolean;
-    readonly isFinished: boolean;
-    readonly isRunning: boolean;
     constructor(context: U, generator: (this: U) => IterableIterator<T>, args: unknown[], debounce?: number | undefined);
     perform(): Promise<T>;
     iterate(iterator: IterableIterator<T>, data?: T): Promise<T>;

@@ -1,52 +1,43 @@
-import { ITaskOptions } from "./task";
+import { ITaskOptions, Task } from "./task";
 import { TaskInstance } from "./task-instance";
-interface ITaskProperty<T, U> {
-    isConcurrent: boolean;
-    isDrop: boolean;
-    isKeepLast: boolean;
-    isQueue: boolean;
-    isRestartable: boolean;
+export interface ITaskProperty<T, U> {
+    /**
+     * The last successful result.
+     */
     lastSuccess?: T;
+    /**
+     * The last error result.
+     */
     lastError?: Error;
+    /**
+     * The last result.
+     */
     lastResult?: T | Error;
+    /**
+     * Currently running task instance. Not safe, as it is likely to be replaced by new calls.
+     */
     currentRun?: TaskInstance<T, U>;
-    context: U;
-    queue: Array<TaskInstance<T, U>>;
-    running: Array<TaskInstance<T, U>>;
+    /**
+     * This is `true` if there are any running task instances.
+     */
     isRunning: boolean;
-    isCancelled: boolean;
+    queuedInstances: Array<TaskInstance<T, U>>;
+    runningInstances: Array<TaskInstance<T, U>>;
+    /**
+     * Cancel all queued or running task instances.
+     */
     cancelAll: () => void;
-    cancelInstance: (instance: TaskInstance<T, U>) => void;
+    /**
+     * Cancel all queued task instances. Has no effect if not a `Queue` or `KeepLast` task.
+     */
     cancelQueued: () => void;
+    /**
+     * Cancel all running task instances.
+     */
     cancelRunning: () => void;
+    /**
+     * Cancel the latest task instance.
+     */
     cancel: () => void;
-    drop: (instance: TaskInstance<T, U>) => void;
-    enqueue: (instance: TaskInstance<T, U>) => void;
-    removeTask: (instance: TaskInstance<T, U>) => void;
-    run: (instance: TaskInstance<T, U>) => Promise<T>;
-    runQueue: () => Promise<T>;
 }
-export declare type TaskProperty<T, U> = ITaskProperty<T, U> & ((this: U) => void);
-/**
- * Wraps a generator function in an ITaskProperty<T> object, providing
- * debouncing and a flag to check if the generator function is running.
- *
- * usage:
- * ```typescript
- * const doSomething = generatorToTask(function*() {
- *   yield new Promise((resolve) => {
- *     setTimeout(() => {
- *       resolve('yeah!');
- *     }), 1000);
- *   }, this);
- * }, { strategy: TaskStrategy.Restartable });
- *
- * doSomething.isRunning   // false;
- * doSomething();
- * doSomething.isRunning   // true;
- * doSomething();          // silently dropped
- * doSomething.lastResult; //'yeah!'
- * ```
- */
-export declare function generatorToTask<T, U>(generator: (this: U) => IterableIterator<T>, opts: ITaskOptions): TaskProperty<T, U>;
-export {};
+export declare function generatorToTask<T, U>(generator: (this: U) => IterableIterator<T>, opts: ITaskOptions): Task<T, U>;
