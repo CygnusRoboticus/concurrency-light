@@ -22,7 +22,7 @@ class DocClass {
   @task({ strategy: TaskStrategy.Restart })
   *asyncSearch(search: string) {
     yield timeout(500);
-    yield this.fetch(`/api/search?filter[query]=${search}`);
+    yield fetch(`/api/search?filter[query]=${search}`);
   }
 }
 ```
