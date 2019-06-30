@@ -25,7 +25,7 @@ var TaskStrategy;
  * @see Task<T, U>
  */
 function task(taskOptions = {}) {
-    return (target, propertyKey, descriptor) => {
+    return (_, __, descriptor) => {
         const method = descriptor.value;
         descriptor.value = task_property_1.generatorToTask(method, taskOptions);
         return descriptor;

@@ -35,7 +35,7 @@ export declare type Task<T = unknown, U = unknown> = ITaskProperty<T, U> & ((thi
  * Decorator for generator functions to behave as a task-like function.
  * @see Task<T, U>
  */
-export declare function task<T>(taskOptions?: ITaskOptions): (target: any, propertyKey: string, descriptor: PropertyDescriptor) => PropertyDescriptor;
+export declare function task<T>(taskOptions?: ITaskOptions): (_: any, __: string, descriptor: PropertyDescriptor) => PropertyDescriptor;
 /**
  * Creates a delayed promise. Useful for manually debouncing.
  */

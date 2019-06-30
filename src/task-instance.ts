@@ -42,7 +42,7 @@ export class TaskInstance<T, U> {
     return this.run;
   }
 
-  iterate(iterator: IterableIterator<T>, data?: T): Promise<T> {
+  iterate(iterator: IterableIterator<T>): Promise<T> {
     if (this.isCancelled) {
       return Promise.reject(new CancellationError());
     }
@@ -58,13 +58,13 @@ export class TaskInstance<T, U> {
       return Promise.resolve(yielded.value!);
     } else if (isPromise(yielded.value)) {
       return yielded.value
-        .then(result => this.iterate(iterator, result))
+        .then(() => this.iterate(iterator))
         .catch(e => {
           this.state = TaskState.Finished;
           return Promise.reject(e);
         });
     } else {
-      return this.iterate(iterator, yielded.value);
+      return this.iterate(iterator);
     }
   }
 
