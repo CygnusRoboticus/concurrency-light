@@ -1,28 +1,56 @@
-import { ITaskOptions, TaskStrategy } from "./task";
+import { ITaskOptions, Task, TaskStrategy } from "./task";
 import { CancellationError, TaskInstance } from "./task-instance";
 
-interface ITaskProperty<T, U> {
+export interface ITaskProperty<T, U> {
+  /**
+   * The last successful result.
+   */
+  lastSuccess?: T;
+  /**
+   * The last error result.
+   */
+  lastError?: Error;
+  /**
+   * The last result.
+   */
+  lastResult?: T | Error;
+  /**
+   * Currently running task instance. Not safe, as it is likely to be replaced by new calls.
+   */
+  currentRun?: TaskInstance<T, U>;
+  /**
+   * This is `true` if there are any running task instances.
+   */
+  isRunning: boolean;
+  queuedInstances: Array<TaskInstance<T, U>>;
+  runningInstances: Array<TaskInstance<T, U>>;
+
+  /**
+   * Cancel all queued or running task instances.
+   */
+  cancelAll: () => void;
+  /**
+   * Cancel all queued task instances. Has no effect if not a `Queue` or `KeepLast` task.
+   */
+  cancelQueued: () => void;
+  /**
+   * Cancel all running task instances.
+   */
+  cancelRunning: () => void;
+  /**
+   * Cancel the latest task instance.
+   */
+  cancel: () => void;
+}
+
+interface ITaskPropertyInternal<T, U> extends ITaskProperty<T, U> {
   isConcurrent: boolean;
   isDrop: boolean;
   isKeepLast: boolean;
   isQueue: boolean;
   isRestartable: boolean;
-
-  lastSuccess?: T;
-  lastError?: Error;
-  lastResult?: T | Error;
-  currentRun?: TaskInstance<T, U>;
-
   context: U;
-  queue: Array<TaskInstance<T, U>>;
-  running: Array<TaskInstance<T, U>>;
-  isRunning: boolean;
-  isCancelled: boolean;
-  cancelAll: () => void;
   cancelInstance: (instance: TaskInstance<T, U>) => void;
-  cancelQueued: () => void;
-  cancelRunning: () => void;
-  cancel: () => void;
   drop: (instance: TaskInstance<T, U>) => void;
   enqueue: (instance: TaskInstance<T, U>) => void;
   removeTask: (instance: TaskInstance<T, U>) => void;
@@ -30,34 +58,11 @@ interface ITaskProperty<T, U> {
   runQueue: () => Promise<T>;
 }
 
-export type TaskProperty<T, U> = ITaskProperty<T, U> & ((this: U) => void);
-
-/**
- * Wraps a generator function in an ITaskProperty<T> object, providing
- * debouncing and a flag to check if the generator function is running.
- *
- * usage:
- * ```typescript
- * const doSomething = generatorToTask(function*() {
- *   yield new Promise((resolve) => {
- *     setTimeout(() => {
- *       resolve('yeah!');
- *     }), 1000);
- *   }, this);
- * }, { strategy: TaskStrategy.Restartable });
- *
- * doSomething.isRunning   // false;
- * doSomething();
- * doSomething.isRunning   // true;
- * doSomething();          // silently dropped
- * doSomething.lastResult; //'yeah!'
- * ```
- */
 export function generatorToTask<T, U>(
   generator: (this: U) => IterableIterator<T>,
   opts: ITaskOptions
-): TaskProperty<T, U> {
-  let perform: TaskProperty<T, U>;
+): Task<T, U> {
+  let perform: ITaskPropertyInternal<T, U>;
 
   perform = function(this: U, ...args: unknown[]) {
     const instance = new TaskInstance(this, generator, args, opts.debounce);
@@ -85,8 +90,8 @@ export function generatorToTask<T, U>(
 
   Object.assign(perform, {
     currentRun: undefined,
-    queue: [] as Array<TaskInstance<T, U>>,
-    running: [] as Array<TaskInstance<T, U>>,
+    queuedInstances: [] as Array<TaskInstance<T, U>>,
+    runningInstances: [] as Array<TaskInstance<T, U>>,
 
     isConcurrent: !opts.strategy,
     isDrop: opts.strategy === TaskStrategy.Drop,
@@ -98,10 +103,10 @@ export function generatorToTask<T, U>(
     lastResult: undefined,
     lastSuccess: undefined,
 
-    run(this: TaskProperty<T, U>, instance: TaskInstance<T, U>) {
+    run(this: ITaskPropertyInternal<T, U>, instance: TaskInstance<T, U>) {
       const instanceRun = instance.perform();
       this.currentRun = instance;
-      this.running.push(instance);
+      this.runningInstances.push(instance);
 
       return instanceRun
         .then(result => {
@@ -122,13 +127,13 @@ export function generatorToTask<T, U>(
 
     removeTask(instance?: TaskInstance<T, U>) {
       if (instance) {
-        const position = this.running.indexOf(instance);
-        const queuePosition = this.queue.indexOf(instance);
+        const position = this.runningInstances.indexOf(instance);
+        const queuePosition = this.queuedInstances.indexOf(instance);
         if (position >= 0) {
-          this.running.splice(position);
+          this.runningInstances.splice(position);
         }
         if (queuePosition >= 0) {
-          this.queue.splice(queuePosition);
+          this.queuedInstances.splice(queuePosition);
         }
         if (this.currentRun === instance) {
           this.currentRun = undefined;
@@ -136,11 +141,11 @@ export function generatorToTask<T, U>(
       }
     },
 
-    runQueue(this: TaskProperty<T, U>) {
+    runQueue(this: ITaskPropertyInternal<T, U>) {
       if (this.isRunning) {
         // do nothing
-      } else if (this.queue.length) {
-        const instance = this.queue.pop()!;
+      } else if (this.queuedInstances.length) {
+        const instance = this.queuedInstances.pop()!;
         return this.run(instance).then(() => {
           return this.runQueue();
         });
@@ -150,35 +155,38 @@ export function generatorToTask<T, U>(
     },
 
     enqueue(instance: TaskInstance<T, U>) {
-      this.queue.unshift(instance);
+      this.queuedInstances.unshift(instance);
     },
-    drop(this: TaskProperty<T, U>, instance: TaskInstance<T, U>) {
+    drop(this: ITaskPropertyInternal<T, U>, instance: TaskInstance<T, U>) {
       instance.drop();
       this.removeTask(instance);
     },
-    cancel(this: TaskProperty<T, U>) {
+    cancel(this: ITaskPropertyInternal<T, U>) {
       if (this.currentRun) {
         this.currentRun.cancel();
         this.removeTask(this.currentRun);
       }
     },
-    cancelInstance(this: TaskProperty<T, U>, instance: TaskInstance<T, U>) {
+    cancelInstance(
+      this: ITaskPropertyInternal<T, U>,
+      instance: TaskInstance<T, U>
+    ) {
       instance.cancel();
       this.removeTask(instance);
     },
-    cancelQueued(this: TaskProperty<T, U>) {
-      this.queue.forEach(i => {
+    cancelQueued(this: ITaskPropertyInternal<T, U>) {
+      this.queuedInstances.forEach(i => {
         i.cancel();
         this.removeTask(i);
       });
     },
-    cancelRunning(this: TaskProperty<T, U>) {
-      this.running.forEach(i => {
+    cancelRunning(this: ITaskPropertyInternal<T, U>) {
+      this.runningInstances.forEach(i => {
         i.cancel();
         this.removeTask(i);
       });
     },
-    cancelAll(this: TaskProperty<T, U>) {
+    cancelAll(this: ITaskPropertyInternal<T, U>) {
       this.cancelQueued();
       this.cancelRunning();
       this.cancel();
@@ -187,11 +195,11 @@ export function generatorToTask<T, U>(
 
   Object.defineProperties(perform, {
     isRunning: {
-      get(this: TaskProperty<T, U>) {
+      get(this: ITaskPropertyInternal<T, U>) {
         return !!this.currentRun;
       }
     }
   });
 
-  return perform as TaskProperty<T, U>;
+  return (perform as unknown) as Task<T, U>;
 }

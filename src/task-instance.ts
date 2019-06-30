@@ -1,5 +1,4 @@
-import { TaskStrategy, timeout } from "./task";
-import { TaskProperty } from "./task-property";
+import { timeout } from "./task";
 
 enum TaskState {
   Idle,
@@ -22,12 +21,6 @@ export class TaskInstance<T, U> {
 
   get isCancelled() {
     return this.state === TaskState.Cancelled;
-  }
-  get isFinished() {
-    return this.state === TaskState.Finished;
-  }
-  get isRunning() {
-    return this.state === TaskState.Running;
   }
 
   constructor(

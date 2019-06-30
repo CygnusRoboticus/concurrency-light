@@ -2,7 +2,7 @@
 
 import { assert } from "chai";
 import "mocha";
-import { task, TaskStrategy, timeout } from "../src/task";
+import { task, TaskStrategy, timeout, Task } from "../src/task";
 
 describe("task", () => {
   it("is concurrent", async () => {
@@ -117,5 +117,25 @@ describe("task", () => {
     stub.performTask(3);
     await timeout(500);
     assert.equal(stub.counter, 3);
+  });
+
+  it("exposes state", async () => {
+    class TestClass {
+      counter = 0;
+
+      @task()
+      *performTask(count: number) {
+        this.counter += count;
+        yield this.counter;
+      }
+    }
+
+    const stub = new TestClass();
+    assert.notOk(((stub as unknown) as Task).isRunning);
+    stub.performTask(1);
+    assert.ok(((stub.performTask as unknown) as Task).isRunning);
+    ((stub.performTask as unknown) as Task).cancelAll();
+    assert.notOk(((stub.performTask as unknown) as Task).isRunning);
+    await timeout(500);
   });
 });
