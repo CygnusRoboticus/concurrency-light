@@ -22,7 +22,7 @@ function generatorToTask(generator, opts) {
             perform.drop(instance);
             return perform.currentRun;
         }
-        else if (perform.isRestartable) {
+        else if (perform.isRestart) {
             perform.cancelAll();
             return perform.run(instance);
         }
@@ -39,7 +39,7 @@ function generatorToTask(generator, opts) {
         isDrop: opts.strategy === task_1.TaskStrategy.Drop,
         isKeepLast: opts.strategy === task_1.TaskStrategy.KeepLast,
         isQueue: opts.strategy === task_1.TaskStrategy.Queue,
-        isRestartable: opts.strategy === task_1.TaskStrategy.Restartable,
+        isRestart: opts.strategy === task_1.TaskStrategy.Restart,
         lastError: undefined,
         lastResult: undefined,
         lastSuccess: undefined,

@@ -2,7 +2,7 @@
 
 import { assert } from "chai";
 import "mocha";
-import { task, TaskStrategy, timeout, Task } from "../src/task";
+import { task, Task, TaskStrategy, timeout } from "../src/task";
 
 describe("task", () => {
   it("is concurrent", async () => {
@@ -28,7 +28,7 @@ describe("task", () => {
     class TestClass {
       counter = 0;
 
-      @task({ strategy: TaskStrategy.Restartable })
+      @task({ strategy: TaskStrategy.Restart })
       *performTask(count: number) {
         yield timeout(100);
         this.counter += count;
@@ -104,7 +104,7 @@ describe("task", () => {
     class TestClass {
       counter = 0;
 
-      @task({ debounce: 100, strategy: TaskStrategy.Restartable })
+      @task({ debounce: 100, strategy: TaskStrategy.Restart })
       *performTask(count: number) {
         this.counter += count;
         yield this.counter;

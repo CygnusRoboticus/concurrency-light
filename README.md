@@ -10,6 +10,8 @@ Lightweight concurrency management, heavily inspired by [ember-concurrency](http
 ## Usage
 
 ```typescript
+import { task, TaskStrategy, timeout } from "concurrency-light";
+
 class DocClass {
   constructor() {
     this.asyncSearch("pants");
@@ -17,7 +19,7 @@ class DocClass {
     this.asyncSearch("skirts"); // restarted
   }
 
-  @task({ strategy: TaskStrategy.Restartable })
+  @task({ strategy: TaskStrategy.Restart })
   *asyncSearch(search: string) {
     yield timeout(500);
     yield this.fetch(`/api/search?filter[query]=${search}`);

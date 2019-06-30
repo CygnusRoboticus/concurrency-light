@@ -2,7 +2,7 @@
   "name": "concurrency-light",
   "version": "0.1.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/task.js",
   "scripts": {
     "build": "tsc",
     "lint:ts": "tslint 'src/**/*.ts' 'test/**/*.ts'",

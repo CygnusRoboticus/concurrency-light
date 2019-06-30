@@ -48,7 +48,7 @@ interface ITaskPropertyInternal<T, U> extends ITaskProperty<T, U> {
   isDrop: boolean;
   isKeepLast: boolean;
   isQueue: boolean;
-  isRestartable: boolean;
+  isRestart: boolean;
   context: U;
   cancelInstance: (instance: TaskInstance<T, U>) => void;
   drop: (instance: TaskInstance<T, U>) => void;
@@ -79,7 +79,7 @@ export function generatorToTask<T, U>(
     } else if (perform.isDrop) {
       perform.drop(instance);
       return perform.currentRun;
-    } else if (perform.isRestartable) {
+    } else if (perform.isRestart) {
       perform.cancelAll();
       return perform.run(instance);
     } else {
@@ -97,7 +97,7 @@ export function generatorToTask<T, U>(
     isDrop: opts.strategy === TaskStrategy.Drop,
     isKeepLast: opts.strategy === TaskStrategy.KeepLast,
     isQueue: opts.strategy === TaskStrategy.Queue,
-    isRestartable: opts.strategy === TaskStrategy.Restartable,
+    isRestart: opts.strategy === TaskStrategy.Restart,
 
     lastError: undefined,
     lastResult: undefined,

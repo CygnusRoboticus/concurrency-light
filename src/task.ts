@@ -10,9 +10,9 @@ export enum TaskStrategy {
    */
   KeepLast,
   /**
-   * The Restartable strategy will cancel the currently running instance when it is called.
+   * The Restart strategy will cancel the currently running instance when it is called.
    */
-  Restartable,
+  Restart,
   /**
    * The Queue strategy will run calls sequentially FIFO.
    */
@@ -25,7 +25,7 @@ export interface ITaskOptions {
    */
   strategy?: TaskStrategy;
   /**
-   * Delay before running this task; useful for `TaskStrategy.Restartable`.
+   * Delay before running this task; useful for `TaskStrategy.Restart`.
    */
   debounce?: number;
 }
@@ -48,6 +48,9 @@ export function task<T>(taskOptions: ITaskOptions = {}) {
   };
 }
 
+/**
+ * Creates a delayed promise. Useful for manually debouncing.
+ */
 export function timeout(delay: number) {
   return new Promise(resolve => setTimeout(resolve, delay));
 }

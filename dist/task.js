@@ -12,9 +12,9 @@ var TaskStrategy;
      */
     TaskStrategy[TaskStrategy["KeepLast"] = 1] = "KeepLast";
     /**
-     * The Restartable strategy will cancel the currently running instance when it is called.
+     * The Restart strategy will cancel the currently running instance when it is called.
      */
-    TaskStrategy[TaskStrategy["Restartable"] = 2] = "Restartable";
+    TaskStrategy[TaskStrategy["Restart"] = 2] = "Restart";
     /**
      * The Queue strategy will run calls sequentially FIFO.
      */
@@ -32,6 +32,9 @@ function task(taskOptions = {}) {
     };
 }
 exports.task = task;
+/**
+ * Creates a delayed promise. Useful for manually debouncing.
+ */
 function timeout(delay) {
     return new Promise(resolve => setTimeout(resolve, delay));
 }
