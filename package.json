@@ -1,8 +1,16 @@
 {
   "name": "concurrency-light",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "",
   "main": "dist/task.js",
+  "files": [
+    "task-instance.js",
+    "task-instance.d.ts",
+    "task-property.js",
+    "task-property.d.ts",
+    "task.js",
+    "task.ts"
+  ],
   "scripts": {
     "build": "tsc",
     "lint:ts": "tslint 'src/**/*.ts' 'test/**/*.ts'",
