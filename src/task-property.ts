@@ -14,57 +14,26 @@ interface ITaskProperty<T, U> {
   currentRun?: TaskInstance<T, U>;
 
   context: U;
-  instances: Array<TaskInstance<T, U>>;
+  queue: Array<TaskInstance<T, U>>;
+  running: Array<TaskInstance<T, U>>;
   isRunning: boolean;
   isCancelled: boolean;
-  dequeue: () => Promise<T>;
-  drop: (instance: TaskInstance<T, U>) => void;
-  enqueue: (instance: TaskInstance<T, U>) => void;
   cancelAll: () => void;
   cancelInstance: (instance: TaskInstance<T, U>) => void;
   cancelQueued: () => void;
-  cancel(): () => void;
+  cancelRunning: () => void;
+  cancel: () => void;
+  drop: (instance: TaskInstance<T, U>) => void;
+  enqueue: (instance: TaskInstance<T, U>) => void;
+  removeTask: (instance: TaskInstance<T, U>) => void;
+  run: (instance: TaskInstance<T, U>) => Promise<T>;
+  runQueue: () => Promise<T>;
 }
 
 export type TaskProperty<T, U> = ITaskProperty<T, U> & ((this: U) => void);
 
-function removeTask<T, U>(
-  property: TaskProperty<T, U>,
-  instance?: TaskInstance<T, U>
-) {
-  if (instance) {
-    const position = property.instances.indexOf(instance);
-    if (position) {
-      property.instances.splice(position);
-    }
-    if (property.currentRun === instance) {
-      property.currentRun = undefined;
-    }
-  }
-}
-
-function run<T, U>(property: TaskProperty<T, U>) {
-  const instance = property.instances.pop()!;
-  const instanceRun = instance.perform();
-  property.currentRun = instance;
-
-  return instanceRun
-    .then(result => {
-      property.lastSuccess = result;
-      property.lastResult = result;
-      removeTask(property, instance);
-    })
-    .catch(error => {
-      if (error instanceof CancellationError) {
-        property.lastError = error;
-        property.lastResult = error;
-      }
-      removeTask(property, instance);
-    });
-}
-
 /**
- * Wraps a generator function in a ConcurrencyTask<T> object, providing
+ * Wraps a generator function in an ITaskProperty<T> object, providing
  * debouncing and a flag to check if the generator function is running.
  *
  * usage:
@@ -93,30 +62,31 @@ export function generatorToTask<T, U>(
   perform = function(this: U, ...args: unknown[]) {
     const instance = new TaskInstance(this, generator, args, opts.debounce);
 
-    if (!perform.isRunning) {
+    if (perform.isQueue) {
       perform.enqueue(instance);
+      return perform.runQueue();
+    } else if (perform.isKeepLast) {
+      perform.cancelQueued();
+      perform.enqueue(instance);
+      return perform.runQueue();
+    } else if (!perform.isRunning) {
+      return perform.run(instance);
+    } else if (perform.isDrop) {
+      perform.drop(instance);
+      return perform.currentRun;
+    } else if (perform.isRestartable) {
+      perform.cancelAll();
+      return perform.run(instance);
     } else {
-      if (perform.isDrop) {
-        perform.drop(instance);
-      } else if (perform.isKeepLast) {
-        perform.cancelQueued();
-        perform.enqueue(instance);
-      } else if (perform.isQueue) {
-        perform.enqueue(instance);
-      } else if (perform.isRestartable) {
-        perform.cancelAll();
-        perform.enqueue(instance);
-      } else {
-        perform.enqueue(instance);
-      }
+      // isConcurrent
+      return perform.run(instance);
     }
-
-    return perform.dequeue();
   } as any;
 
   Object.assign(perform, {
     currentRun: undefined,
-    instances: [] as Array<TaskInstance<T, U>>,
+    queue: [] as Array<TaskInstance<T, U>>,
+    running: [] as Array<TaskInstance<T, U>>,
 
     isConcurrent: !opts.strategy,
     isDrop: opts.strategy === TaskStrategy.Drop,
@@ -128,52 +98,89 @@ export function generatorToTask<T, U>(
     lastResult: undefined,
     lastSuccess: undefined,
 
-    dequeue(this: TaskProperty<T, U>) {
-      if (this.isRunning) {
-        const instance = this.currentRun!;
-        if (instance.isFinished) {
-          removeTask(this, instance);
-          return this.dequeue();
-        } else if (this.isQueue || this.isKeepLast) {
-          return instance.run!.then(() => {
-            removeTask(this, instance);
-            return this.dequeue();
-          });
-        } else if (this.isConcurrent && this.instances.length) {
-          return run(this);
+    run(this: TaskProperty<T, U>, instance: TaskInstance<T, U>) {
+      const instanceRun = instance.perform();
+      this.currentRun = instance;
+      this.running.push(instance);
+
+      return instanceRun
+        .then(result => {
+          this.lastSuccess = result;
+          this.lastResult = result;
+          this.removeTask(instance);
+          return result;
+        })
+        .catch(error => {
+          if (error instanceof CancellationError) {
+            this.lastError = error;
+            this.lastResult = error;
+          }
+          this.removeTask(instance);
+          return error;
+        });
+    },
+
+    removeTask(instance?: TaskInstance<T, U>) {
+      if (instance) {
+        const position = this.running.indexOf(instance);
+        const queuePosition = this.queue.indexOf(instance);
+        if (position >= 0) {
+          this.running.splice(position);
         }
-      } else if (this.instances.length) {
-        return run(this);
+        if (queuePosition >= 0) {
+          this.queue.splice(queuePosition);
+        }
+        if (this.currentRun === instance) {
+          this.currentRun = undefined;
+        }
+      }
+    },
+
+    runQueue(this: TaskProperty<T, U>) {
+      if (this.isRunning) {
+        // do nothing
+      } else if (this.queue.length) {
+        const instance = this.queue.pop()!;
+        return this.run(instance).then(() => {
+          return this.runQueue();
+        });
       } else {
         return Promise.resolve(this.lastSuccess);
       }
     },
 
     enqueue(instance: TaskInstance<T, U>) {
-      this.instances.unshift(instance);
+      this.queue.unshift(instance);
     },
     drop(this: TaskProperty<T, U>, instance: TaskInstance<T, U>) {
       instance.drop();
-      removeTask(this, instance);
+      this.removeTask(instance);
     },
     cancel(this: TaskProperty<T, U>) {
       if (this.currentRun) {
         this.currentRun.cancel();
-        removeTask(this, this.currentRun);
+        this.removeTask(this.currentRun);
       }
     },
     cancelInstance(this: TaskProperty<T, U>, instance: TaskInstance<T, U>) {
       instance.cancel();
-      removeTask(this, instance);
+      this.removeTask(instance);
     },
     cancelQueued(this: TaskProperty<T, U>) {
-      this.instances.forEach(i => {
+      this.queue.forEach(i => {
         i.cancel();
-        removeTask(this, i);
+        this.removeTask(i);
+      });
+    },
+    cancelRunning(this: TaskProperty<T, U>) {
+      this.running.forEach(i => {
+        i.cancel();
+        this.removeTask(i);
       });
     },
     cancelAll(this: TaskProperty<T, U>) {
       this.cancelQueued();
+      this.cancelRunning();
       this.cancel();
     }
   });

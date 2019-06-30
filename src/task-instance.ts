@@ -1,5 +1,13 @@
+import { TaskStrategy, timeout } from "./task";
 import { TaskProperty } from "./task-property";
-import { timeout } from "./task";
+
+enum TaskState {
+  Idle,
+  Running,
+  Dropped,
+  Cancelled,
+  Finished
+}
 
 // tslint:disable max-classes-per-file
 export class CancellationError extends Error {
@@ -10,11 +18,17 @@ export class CancellationError extends Error {
 
 export class TaskInstance<T, U> {
   run?: Promise<T>;
-  isStarted = false;
-  isRunning = false;
-  isDropped = false;
-  isCancelled = false;
-  isFinished = false;
+  state = TaskState.Idle;
+
+  get isCancelled() {
+    return this.state === TaskState.Cancelled;
+  }
+  get isFinished() {
+    return this.state === TaskState.Finished;
+  }
+  get isRunning() {
+    return this.state === TaskState.Running;
+  }
 
   constructor(
     private context: U,
@@ -24,11 +38,7 @@ export class TaskInstance<T, U> {
   ) {}
 
   perform() {
-    this.isStarted = true;
-    this.isRunning = true;
-    this.isDropped = true;
-    this.isCancelled = false;
-    this.isFinished = false;
+    this.state = TaskState.Running;
 
     const iterator = this.generator.apply(this.context, this.args as []);
 
@@ -50,14 +60,14 @@ export class TaskInstance<T, U> {
     } = iterator.next();
 
     if (yielded.done) {
-      this.isRunning = false;
+      this.state = TaskState.Finished;
 
       return Promise.resolve(yielded.value!);
     } else if (isPromise(yielded.value)) {
       return yielded.value
         .then(result => this.iterate(iterator, result))
         .catch(e => {
-          this.isRunning = false;
+          this.state = TaskState.Finished;
           return Promise.reject(e);
         });
     } else {
@@ -66,11 +76,11 @@ export class TaskInstance<T, U> {
   }
 
   drop() {
-    this.isDropped = true;
+    this.state = TaskState.Dropped;
   }
 
   cancel() {
-    this.isCancelled = true;
+    this.state = TaskState.Cancelled;
   }
 }
 
