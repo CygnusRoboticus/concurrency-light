@@ -59,7 +59,7 @@ interface ITaskPropertyInternal<T, U> extends ITaskProperty<T, U> {
 }
 
 export function generatorToTask<T, U>(
-  generator: (this: U) => IterableIterator<T>,
+  generator: (this: U) => Generator<T>,
   opts: ITaskOptions
 ): Task<T, U> {
   let perform: ITaskPropertyInternal<T, U>;

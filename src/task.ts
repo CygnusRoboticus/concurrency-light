@@ -42,7 +42,7 @@ export type Task<T = unknown, U = unknown> = ITaskProperty<T, U> &
  */
 export function task<T>(taskOptions: ITaskOptions = {}) {
   return (_: any, __: string, descriptor: PropertyDescriptor) => {
-    const method: () => IterableIterator<T> = descriptor.value;
+    const method: () => Generator<T> = descriptor.value;
     descriptor.value = generatorToTask(method, taskOptions);
     return descriptor;
   };

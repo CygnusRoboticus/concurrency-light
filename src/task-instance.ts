@@ -25,7 +25,7 @@ export class TaskInstance<T, U> {
 
   constructor(
     private context: U,
-    private generator: (this: U) => IterableIterator<T>,
+    private generator: (this: U) => Generator<T | Promise<T>>,
     private args: unknown[],
     private debounce?: number
   ) {}
@@ -42,15 +42,12 @@ export class TaskInstance<T, U> {
     return this.run;
   }
 
-  iterate(iterator: IterableIterator<T>): Promise<T> {
+  iterate(iterator: Generator<T | Promise<T>>): Promise<T> {
     if (this.isCancelled) {
       return Promise.reject(new CancellationError());
     }
 
-    const yielded: {
-      value: T | Promise<T>;
-      done: boolean;
-    } = iterator.next();
+    const yielded = iterator.next();
 
     if (yielded.done) {
       this.state = TaskState.Finished;
