@@ -1,6 +1,6 @@
 {
   "name": "concurrency-light",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "Lightweight concurrency management",
   "main": "dist/task.js",
   "files": [
@@ -21,9 +21,6 @@
     "url": "https://github.com/CygnusRoboticus/concurrency-light/issues"
   },
   "homepage": "https://github.com/CygnusRoboticus/concurrency-light#readme",
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com/"
-  },
   "dependencies": {},
   "devDependencies": {
     "@types/chai": "^4.2.3",
