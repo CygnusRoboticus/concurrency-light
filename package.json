@@ -1,6 +1,6 @@
 {
   "name": "concurrency-light",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "Lightweight concurrency management",
   "main": "dist/task.js",
   "files": [
