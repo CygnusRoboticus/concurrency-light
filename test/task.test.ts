@@ -1,6 +1,6 @@
 // tslint:disable max-classes-per-file
 
-import { task, Task, TaskStrategy, timeout } from "../src/task";
+import { ITask, task, TaskStrategy, timeout } from "../src/task";
 
 describe("task", () => {
   it("is concurrent", async () => {
@@ -130,9 +130,42 @@ describe("task", () => {
 
     const stub = new TestClass();
     stub.performTask(1);
-    expect(((stub.performTask as unknown) as Task).isRunning).toBeTruthy();
-    ((stub.performTask as unknown) as Task).cancelAll();
-    expect(((stub.performTask as unknown) as Task).isRunning).toBeFalsy();
+    expect(((stub.performTask as unknown) as ITask).isRunning).toBeTruthy();
+    ((stub.performTask as unknown) as ITask).cancelAll();
+    expect(((stub.performTask as unknown) as ITask).isRunning).toBeFalsy();
     await timeout(500);
+  });
+
+  it("has a real return value", async () => {
+    class TestClass {
+      counter = 0;
+
+      @task()
+      *performTask(count: number) {
+        this.counter += count;
+        return this.counter;
+      }
+    }
+
+    const stub = new TestClass();
+    const value = await stub.performTask(3);
+    expect(value).toEqual(3);
+  });
+
+  it("exposes errors appropriately", async () => {
+    class TestClass {
+      @task()
+      *performTask() {
+        return Promise.reject(new Error("whatever"));
+      }
+    }
+
+    const stub = new TestClass();
+    try {
+      await stub.performTask();
+      expect(true).toBeFalsy();
+    } catch (e) {
+      expect(e).toBeInstanceOf(Error);
+    }
   });
 });

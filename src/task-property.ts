@@ -1,4 +1,4 @@
-import { ITaskOptions, Task, TaskStrategy } from "./task";
+import { ITask, ITaskOptions, TaskStrategy } from "./task";
 import { CancellationError, TaskInstance } from "./task-instance";
 
 export interface ITaskProperty<T, U> {
@@ -61,7 +61,7 @@ interface ITaskPropertyInternal<T, U> extends ITaskProperty<T, U> {
 export function generatorToTask<T, U>(
   generator: (this: U) => Generator<T>,
   opts: ITaskOptions
-): Task<T, U> {
+): ITask<T, U> {
   let perform: ITaskPropertyInternal<T, U>;
 
   perform = function(this: U, ...args: unknown[]) {
@@ -199,5 +199,5 @@ export function generatorToTask<T, U>(
     }
   });
 
-  return (perform as unknown) as Task<T, U>;
+  return (perform as unknown) as ITask<T, U>;
 }

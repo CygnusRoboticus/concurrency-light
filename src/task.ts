@@ -33,8 +33,9 @@ export interface ITaskOptions {
 /**
  * Task-like generator function that handles various concurrency strategies and exposes some state information.
  */
-export type Task<T = unknown, U = unknown> = ITaskProperty<T, U> &
-  ((this: U) => void);
+export interface ITask<T = unknown, U = unknown> extends ITaskProperty<T, U> {
+  (this: U, ...args: unknown[]): T;
+}
 
 /**
  * Decorator for generator functions to behave as a task-like function.
