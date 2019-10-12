@@ -1,7 +1,5 @@
 // tslint:disable max-classes-per-file
 
-import { assert } from "chai";
-import "mocha";
 import { task, Task, TaskStrategy, timeout } from "../src/task";
 
 describe("task", () => {
@@ -21,7 +19,7 @@ describe("task", () => {
     stub.performTask(2);
     stub.performTask(3);
     await timeout(500);
-    assert.equal(stub.counter, 6);
+    expect(stub.counter).toEqual(6);
   });
 
   it("is restartable", async () => {
@@ -40,7 +38,7 @@ describe("task", () => {
     stub.performTask(2);
     stub.performTask(3);
     await timeout(500);
-    assert.equal(stub.counter, 3);
+    expect(stub.counter).toEqual(3);
   });
 
   it("is droppable", async () => {
@@ -59,7 +57,7 @@ describe("task", () => {
     stub.performTask(2);
     stub.performTask(3);
     await timeout(500);
-    assert.equal(stub.counter, 1);
+    expect(stub.counter).toEqual(1);
   });
 
   it("is queue-able", async () => {
@@ -78,7 +76,7 @@ describe("task", () => {
     stub.performTask(2);
     stub.performTask(3);
     await timeout(500);
-    assert.equal(stub.counter, 6);
+    expect(stub.counter).toEqual(6);
   });
 
   it("is keepLast-able", async () => {
@@ -97,7 +95,7 @@ describe("task", () => {
     stub.performTask(2);
     stub.performTask(3);
     await timeout(500);
-    assert.equal(stub.counter, 4);
+    expect(stub.counter).toEqual(4);
   });
 
   it("is debounce-able", async () => {
@@ -116,7 +114,7 @@ describe("task", () => {
     stub.performTask(2);
     stub.performTask(3);
     await timeout(500);
-    assert.equal(stub.counter, 3);
+    expect(stub.counter).toEqual(3);
   });
 
   it("exposes state", async () => {
@@ -131,11 +129,10 @@ describe("task", () => {
     }
 
     const stub = new TestClass();
-    assert.notOk(((stub as unknown) as Task).isRunning);
     stub.performTask(1);
-    assert.ok(((stub.performTask as unknown) as Task).isRunning);
+    expect(((stub.performTask as unknown) as Task).isRunning).toBeTruthy();
     ((stub.performTask as unknown) as Task).cancelAll();
-    assert.notOk(((stub.performTask as unknown) as Task).isRunning);
+    expect(((stub.performTask as unknown) as Task).isRunning).toBeFalsy();
     await timeout(500);
   });
 });
